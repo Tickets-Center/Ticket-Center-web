@@ -8,7 +8,7 @@ import SelectedTechnicians from "../components/SelectedTechnicians";
 
 import { useTicket } from "../hooks/useTicket";
 import { useTechnicians } from "../hooks/useTechnicians";
-import { useHandleEdit } from "../hooks/useHandleEdit";
+import { useHandleEdit } from "../hooks/Usehandleedit";
 
 import { inputStyle } from "../styles";
 
