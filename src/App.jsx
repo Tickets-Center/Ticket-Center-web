@@ -1,72 +1,91 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
+
+import PageLoader from "./components/ui/PageLoader";
+import StatusPage from "./components/ui/StatusPage";
 import ProtectedRoute from "./features/auth/ProtectedRoute";
 
-// Auth pages
-import LoginPage from "./features/auth/pages/Login";
-import RegisterPage from "./features/auth/pages/Register";
-import ForgotPasswordPage from "./features/auth/pages/ForgotPassword";
-import ResetPasswordPage from "./features/auth/pages/ResetPassword";
+const LoginPage = lazy(() => import("./features/auth/pages/Login"));
+const RegisterPage = lazy(() => import("./features/auth/pages/Register"));
+const ForgotPasswordPage = lazy(
+  () => import("./features/auth/pages/ForgotPassword"),
+);
+const ResetPasswordPage = lazy(
+  () => import("./features/auth/pages/ResetPassword"),
+);
 
-// Default pages
-import HomePage from "./features/default/pages/HomePage";
-import CreateTicket from "./features/default/pages/CreateTicket";
-import NotFound from "./features/default/pages/NotFound";
-import Unauthorized from "./features/default/pages/Unauthorized";
+const HomePage = lazy(() => import("./features/tickets/pages/HomePage"));
+const CreateTicket = lazy(() => import("./features/tickets/pages/CreateTicket"));
 
-// Manager / dispatcher pages
-import Ticket from "./features/manager/pages/Tickets";
-import CreateAssignment from "./features/manager/pages/CreateAssigment";
-import EditAssignment from "./features/manager/pages/EditAssigment";
-import Progress from "./features/manager/pages/Progress";
+const Ticket = lazy(() => import("./features/manager/pages/Tickets"));
+const AssignmentForm = lazy(
+  () => import("./features/manager/pages/AssignmentForm"),
+);
+const Progress = lazy(() => import("./features/manager/pages/Progress"));
 
-// Technician pages
-import Assignments from "./features/Technician/pages/Assignments";
-import Assigment from "./features/Technician/pages/Assigment";
+const Assignments = lazy(
+  () => import("./features/technician/pages/Assignments"),
+);
+const Assignment = lazy(() => import("./features/technician/pages/Assignment"));
 
-// Admin pages
-import AdminUsers from "./features/admin/pages/Users";
+const AdminUsers = lazy(() => import("./features/admin/pages/Users"));
 
 export default function App() {
   return (
-    <Routes>
-      {/* ── Public ──────────────────────────────────────── */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/404" element={<NotFound />} />
-      <Route path="/unauthorized" element={<Unauthorized />} />
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        {/* Public */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route
+          path="/404"
+          element={<StatusPage title="404" message="Page not found." />}
+        />
+        <Route
+          path="/unauthorized"
+          element={
+            <StatusPage
+              title="Unauthorized"
+              message="You are not authorized to access this page."
+            />
+          }
+        />
 
-      {/* ── Any authenticated user ──────────────────────── */}
-      <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/createTicket" element={<CreateTicket />} />
-      </Route>
+        {/* Any authenticated user */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/createTicket" element={<CreateTicket />} />
+        </Route>
 
-      {/* ── Technician + Admin ──────────────────────────── */}
-      <Route element={<ProtectedRoute roles={["technician", "admin"]} />}>
-        <Route path="/technician/assignments" element={<Assignments />} />
-        <Route path="/technician/assignment/:id" element={<Assigment />} />
-      </Route>
+        {/* Technician + Admin */}
+        <Route element={<ProtectedRoute roles={["technician", "admin"]} />}>
+          <Route path="/technician/assignments" element={<Assignments />} />
+          <Route path="/technician/assignment/:id" element={<Assignment />} />
+        </Route>
 
-      {/* ── Manager / Dispatcher / Admin ────────────────── */}
-      <Route
-        element={<ProtectedRoute roles={["manager", "dispatcher", "admin"]} />}
-      >
-        <Route path="/manager/tickets" element={<Ticket />} />
-        <Route path="/assign/edit/:id" element={<EditAssignment />} />
-        <Route path="/assign/:id" element={<CreateAssignment />} />
+        {/* Manager / Dispatcher / Admin */}
+        <Route
+          element={<ProtectedRoute roles={["manager", "dispatcher", "admin"]} />}
+        >
+          <Route path="/manager/tickets" element={<Ticket />} />
+          <Route
+            path="/assign/edit/:id"
+            element={<AssignmentForm mode="edit" />}
+          />
+          <Route path="/assign/:id" element={<AssignmentForm mode="create" />} />
+          <Route path="/progress/:id" element={<Progress />} />
+        </Route>
 
-        <Route path="/progress/:id" element={<Progress />} />
-      </Route>
+        {/* Admin only */}
+        <Route element={<ProtectedRoute roles={["admin"]} />}>
+          <Route path="/admin/users" element={<AdminUsers />} />
+        </Route>
 
-      {/* ── Admin only ──────────────────────────────────── */}
-      <Route element={<ProtectedRoute roles={["admin"]} />}>
-        <Route path="/admin/users" element={<AdminUsers />} />
-      </Route>
-
-      {/* ── Fallback ────────────────────────────────────── */}
-      <Route path="*" element={<Navigate to="/404" replace />} />
-    </Routes>
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/404" replace />} />
+      </Routes>
+    </Suspense>
   );
 }

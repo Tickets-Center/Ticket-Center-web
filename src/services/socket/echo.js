@@ -1,27 +1,18 @@
 import Echo from "laravel-echo";
 import Pusher from "pusher-js";
+import { API_BASE_URL, REVERB } from "../../config/env";
 
 window.Pusher = Pusher;
 
-const apiBase =
-  import.meta.env.VITE_API_BASE_URL || "http://striker67.duckdns.org:8000/api";
-
 const echo = new Echo({
   broadcaster: "reverb",
-
-  key: import.meta.env.VITE_REVERB_APP_KEY || "ticketcenter-key",
-
-  wsHost: import.meta.env.VITE_REVERB_HOST || "striker67.duckdns.org",
-
-  wsPort: import.meta.env.VITE_REVERB_PORT || 8080,
-  wssPort: import.meta.env.VITE_REVERB_PORT || 8080,
-
-  forceTLS: false,
-
+  key: REVERB.key,
+  wsHost: REVERB.host,
+  wsPort: REVERB.port,
+  wssPort: REVERB.port,
+  forceTLS: REVERB.scheme === "https",
   enabledTransports: ["ws"],
-
-  authEndpoint: `${apiBase}/broadcasting/auth`,
-
+  authEndpoint: `${API_BASE_URL}/broadcasting/auth`,
   auth: {
     headers: {
       Authorization: `Bearer ${localStorage.getItem("token") || ""}`,

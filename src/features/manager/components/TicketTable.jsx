@@ -1,10 +1,11 @@
 import { useNavigate } from "react-router-dom";
+import { StatusBadge } from "../../../components/ui/TicketBadges";
 
 export default function TicketTable({ tickets }) {
   const navigate = useNavigate();
 
   return (
-    <div className="grid">
+    <div className="table-wrapper">
       <table>
         <thead>
           <tr>
@@ -17,7 +18,7 @@ export default function TicketTable({ tickets }) {
         <tbody>
           {tickets.length === 0 ? (
             <tr>
-              <td colSpan={4} style={{ textAlign: "center" }}>
+              <td colSpan={4} className="table-empty">
                 No tickets found.
               </td>
             </tr>
@@ -27,33 +28,41 @@ export default function TicketTable({ tickets }) {
                 <td>#{ticket.id}</td>
                 <td>{ticket.description}</td>
                 <td>
-                  <span className={`status-${ticket.status}`}>
-                    {ticket.status.replace("_", " ")}
-                  </span>
+                  <StatusBadge status={ticket.status} />
                 </td>
                 <td>
-                  {ticket.status === "open" ? (
-                    <button onClick={() => navigate(`/assign/${ticket.id}`)}>
-                      Assign
-                    </button>
-                  ) : ticket.status === "resolved" ? (
-                    <button onClick={() => navigate(`/progress/${ticket.id}`)}>
-                      Watch Progress
-                    </button>
-                  ) : (
-                    <>
+                  <div className="table-actions">
+                    {ticket.status === "open" ? (
                       <button
-                        onClick={() => navigate(`/progress/${ticket.id}`)}
+                        type="button"
+                        className="btn btn-primary btn-small"
+                        onClick={() => navigate(`/assign/${ticket.id}`)}
                       >
-                        Watch Progress
+                        Assign
                       </button>
-                      <button
-                        onClick={() => navigate(`/assign/edit/${ticket.id}`)}
-                      >
-                        edit
-                      </button>
-                    </>
-                  )}
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-small"
+                          onClick={() => navigate(`/progress/${ticket.id}`)}
+                        >
+                          Watch Progress
+                        </button>
+                        {ticket.status !== "resolved" && (
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-small"
+                            onClick={() =>
+                              navigate(`/assign/edit/${ticket.id}`)
+                            }
+                          >
+                            Edit
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))

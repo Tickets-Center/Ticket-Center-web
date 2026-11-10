@@ -1,68 +1,71 @@
-// src/components/layout/Navbar.jsx
-
+import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faSun,
-  faMoon,
-  faHouse,
-  faUserGear,
-  faClipboardList,
-  faChartLine,
-  faBell,
-  faEnvelope,
-  faRightFromBracket,
-  faGear,
-  faCheck,
   faBars,
-  faTimes,
-  faTicket,
+  faBell,
+  faCheck,
   faCircle,
+  faClipboardList,
+  faEnvelope,
+  faHouse,
+  faMoon,
+  faRightFromBracket,
+  faSun,
+  faTicket,
+  faTimes,
+  faUserGear,
   faUsersGear,
 } from "@fortawesome/free-solid-svg-icons";
-
-import { useHasRole } from "../../utils/roles";
-import "../../styles/navbar.css";
 import { Link, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
 
-import { useTheme } from "../../hooks/useTheme";
-import { useDropdown } from "../../hooks/useDropdown";
+import "../../styles/navbar.css";
+import { getStatusMeta } from "../../constants/tickets";
+import { formatTime } from "../../lib/format";
+import { useAuth } from "../../features/auth/useAuth";
+import { getUserRoles, useHasRole } from "../../features/auth/useHasRole";
+import { useLogout } from "../../features/auth/hooks/useLogout";
+import { useMyTickets } from "../../features/tickets/hooks/useMyTickets";
 import { useNotifications } from "../../hooks/useNotifications";
-import useLogout from "../../hooks/useLogout";
-import { useAuthContext } from "../../features/auth/context/AuthContext";
-import { http } from "../../services/api/http";
-import ChatBox from "../ChatBox";
+import { useTheme } from "../../hooks/useTheme";
+import ChatBox from "../../features/chat/components/ChatBox";
+import Avatar from "../ui/Avatar";
+import Dropdown from "../ui/Dropdown";
 
-const notifIcon = {
+const NOTIFICATION_ICONS = {
   assignment: "📋",
   resolved: "✅",
   message: "💬",
   info: "ℹ️",
 };
-const fmtTime = (d) =>
-  new Date(d).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-const statusColor = {
-  open: "#6c757d",
-  assigned: "#0d6efd",
-  in_progress: "#fd7e14",
-};
-const statusLabel = {
-  open: "Open",
-  assigned: "Assigned",
-  in_progress: "In Progress",
-};
+
+const NAV_LINKS = [
+  { to: "/", icon: faHouse, label: "Home" },
+  {
+    to: "/technician/assignments",
+    icon: faClipboardList,
+    label: "Assignments",
+    assignmentOnly: true,
+  },
+  {
+    to: "/manager/tickets",
+    icon: faUserGear,
+    label: "Tickets",
+    managerOnly: true,
+  },
+  { to: "/createTicket", icon: faTicket, label: "New Ticket" },
+  { to: "/admin/users", icon: faUsersGear, label: "Users", adminOnly: true },
+];
 
 export default function Navbar() {
   const { isDark, toggleTheme } = useTheme();
   const { logout, loading: logoutLoading } = useLogout();
-  const { user } = useAuthContext();
-  const profile = useDropdown();
-  const notif = useDropdown();
-  const msgDropdown = useDropdown();
-  const canManageTickets = useHasRole(["dispatcher", "admin"]);
-  const isUseAssigment = useHasRole(["admin", "technician"]);
-  const isAdmin = useHasRole(["admin"]);
+  const { user } = useAuth();
+  const { tickets } = useMyTickets(Boolean(user));
   const location = useLocation();
+
+  const canManageTickets = useHasRole(["dispatcher", "admin"]);
+  const canUseAssignments = useHasRole(["admin", "technician"]);
+  const isAdmin = useHasRole(["admin"]);
 
   const {
     notifications,
@@ -75,380 +78,304 @@ export default function Navbar() {
 
   const [activeChat, setActiveChat] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [myTickets, setMyTickets] = useState([]);
-
-  useEffect(() => {
-    if (!user) return;
-    http
-      .get("my-tickets")
-      .then((r) => setMyTickets(r.data))
-      .catch(() => {});
-  }, [user]);
-
-  const initials = user?.name ? user.name[0].toUpperCase() : "?";
-  const isActive = (path) => location.pathname === path;
-
-  const navLinks = [
-    { to: "/", icon: faHouse, label: "Home" },
-    {
-      to: "/technician/assignments",
-      icon: faClipboardList,
-      label: "Assignments",
-      assignmentOnly: true,
-    },
-    {
-      to: "/manager/tickets",
-      icon: faUserGear,
-      label: "Tickets",
-      managerOnly: true,
-    },
-    { to: "/createTicket", icon: faTicket, label: "New Ticket" },
-    { to: "/admin/users", icon: faUsersGear, label: "Users", adminOnly: true },
-  ];
-
-  const closeAll = () => {
-    notif.setOpen(false);
-    msgDropdown.setOpen(false);
-    profile.setOpen(false);
-  };
 
   const openChat = (ticket) => {
     setActiveChat({
       ticketId: ticket.id,
       ticketTitle: ticket.title || `Ticket #${ticket.id}`,
     });
-    msgDropdown.setOpen(false);
   };
 
-  // Shared link guard used in both desktop and mobile
-  const shouldShow = ({ managerOnly, adminOnly, assignmentOnly }) => {
+  const isVisible = ({ managerOnly, adminOnly, assignmentOnly }) => {
     if (managerOnly && !canManageTickets) return false;
     if (adminOnly && !isAdmin) return false;
-    if (assignmentOnly && !isUseAssigment) return false;
+    if (assignmentOnly && !canUseAssignments) return false;
     return true;
   };
+
+  const visibleLinks = NAV_LINKS.filter(isVisible);
+  const roleLabel = getUserRoles(user)[0];
+  const isActive = (path) => location.pathname === path;
 
   return (
     <>
       <nav className="fb-navbar">
-        {/* LEFT */}
         <div className="nav-left">
-          <div className="logo">TC</div>
+          <Link to="/" className="logo" aria-label="Ticket Center home">
+            TC
+          </Link>
         </div>
 
-        {/* CENTER */}
         <div className="nav-center nav-center-desktop">
-          {navLinks.map((link) => {
-            if (!shouldShow(link)) return null;
-            return (
-              <Link
-                key={link.to}
-                to={link.to}
-                className={`nav-icon ${isActive(link.to) ? "nav-icon-active" : ""}`}
-                title={link.label}
-              >
-                <FontAwesomeIcon icon={link.icon} />
-              </Link>
-            );
-          })}
+          {visibleLinks.map((link) => (
+            <Link
+              key={link.to}
+              to={link.to}
+              className={`nav-icon ${isActive(link.to) ? "nav-icon-active" : ""}`}
+              title={link.label}
+            >
+              <FontAwesomeIcon icon={link.icon} />
+            </Link>
+          ))}
         </div>
 
-        {/* RIGHT */}
         <div className="nav-right">
           {/* MESSAGES */}
-          <div className="dropdown-wrapper" ref={msgDropdown.ref}>
-            <div
-              className="nav-icon badge-wrapper"
-              onClick={() => {
-                closeAll();
-                msgDropdown.setOpen(!msgDropdown.open);
-              }}
-            >
-              <FontAwesomeIcon icon={faEnvelope} />
-              {unreadMessages.length > 0 && (
-                <span className="badge">
-                  {unreadMessages.length > 9 ? "9+" : unreadMessages.length}
-                </span>
-              )}
-            </div>
-
-            {msgDropdown.open && (
-              <div className="dropdown-panel">
-                <div className="panel-header">
-                  <span>Messages</span>
-                  <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>
-                    {myTickets.length} active
-                  </span>
-                </div>
-                <div className="panel-list">
-                  {myTickets.length === 0 ? (
-                    <div className="panel-empty">No active tickets</div>
-                  ) : (
-                    myTickets.map((t) => (
-                      <div
-                        key={t.id}
-                        className="panel-item"
-                        onClick={() => openChat(t)}
-                      >
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div
-                            style={{
-                              fontWeight: 600,
-                              fontSize: "0.87rem",
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                            }}
-                          >
-                            {t.title || `Ticket #${t.id}`}
-                          </div>
-                          <div
-                            style={{
-                              fontSize: "0.72rem",
-                              color: "var(--muted)",
-                              marginTop: 2,
-                            }}
-                          >
-                            #{t.id}
-                          </div>
-                        </div>
-                        <span
-                          style={{
-                            fontSize: "0.7rem",
-                            fontWeight: 700,
-                            color: statusColor[t.status] || "#6c757d",
-                            flexShrink: 0,
-                            marginLeft: 8,
-                          }}
-                        >
-                          {statusLabel[t.status] || t.status}
-                        </span>
-                      </div>
-                    ))
+          <Dropdown>
+            {({ open, toggle }) => (
+              <>
+                <button
+                  type="button"
+                  className="nav-icon badge-wrapper"
+                  onClick={toggle}
+                  aria-label="Open ticket messages"
+                >
+                  <FontAwesomeIcon icon={faEnvelope} />
+                  {unreadMessages.length > 0 && (
+                    <span className="badge">
+                      {unreadMessages.length > 9
+                        ? "9+"
+                        : unreadMessages.length}
+                    </span>
                   )}
-                </div>
-              </div>
+                </button>
+
+                {open && (
+                  <div className="dropdown-panel">
+                    <div className="panel-header">
+                      <span>Messages</span>
+                      <span className="panel-count">
+                        {tickets.length} active
+                      </span>
+                    </div>
+                    <div className="panel-list">
+                      {tickets.length === 0 ? (
+                        <div className="panel-empty">No active tickets</div>
+                      ) : (
+                        tickets.map((ticket) => {
+                          const meta = getStatusMeta(ticket.status);
+                          return (
+                            <button
+                              type="button"
+                              key={ticket.id}
+                              className="panel-item panel-button"
+                              onClick={() => openChat(ticket)}
+                            >
+                              <div className="panel-item-main">
+                                <div className="panel-item-title">
+                                  {ticket.title || `Ticket #${ticket.id}`}
+                                </div>
+                                <div className="panel-item-subtitle">
+                                  #{ticket.id}
+                                </div>
+                              </div>
+                              <span
+                                className="panel-item-status"
+                                style={{ color: meta.color }}
+                              >
+                                {meta.label}
+                              </span>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
-          </div>
+          </Dropdown>
 
           {/* NOTIFICATIONS */}
-          <div className="dropdown-wrapper" ref={notif.ref}>
-            <div
-              className="nav-icon badge-wrapper"
-              onClick={() => {
-                closeAll();
-                notif.setOpen(!notif.open);
-              }}
-            >
-              <FontAwesomeIcon icon={faBell} />
-              {unreadCount > 0 && (
-                <span className="badge">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
-            </div>
+          <Dropdown>
+            {({ open, toggle }) => (
+              <>
+                <button
+                  type="button"
+                  className="nav-icon badge-wrapper"
+                  onClick={toggle}
+                  aria-label="Open notifications"
+                >
+                  <FontAwesomeIcon icon={faBell} />
+                  {unreadCount > 0 && (
+                    <span className="badge">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </button>
 
-            {notif.open && (
-              <div className="dropdown-panel">
-                <div className="panel-header">
-                  <span>Notifications</span>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    {unreadCount > 0 && (
-                      <button onClick={markAllRead} title="Mark all read">
-                        <FontAwesomeIcon icon={faCheck} />
-                      </button>
-                    )}
-                    {notifications.length > 0 && (
-                      <button
-                        onClick={clearAll}
-                        style={{ color: "var(--danger)" }}
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <div className="panel-list">
-                  {notifications.length === 0 ? (
-                    <div className="panel-empty">No notifications yet</div>
-                  ) : (
-                    notifications.map((n) => (
-                      <div
-                        key={n.id}
-                        className={`panel-item ${n.unread ? "unread" : ""}`}
-                        onClick={() => {
-                          markRead(n.id);
-                          if (n.meta?.ticketId)
-                            openChat({
-                              id: n.meta.ticketId,
-                              title: n.meta.ticketTitle,
-                            });
-                        }}
-                      >
-                        <span style={{ marginRight: 8, flexShrink: 0 }}>
-                          {notifIcon[n.type] || "🔔"}
-                        </span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div
-                            style={{ fontSize: "0.85rem", lineHeight: 1.35 }}
+                {open && (
+                  <div className="dropdown-panel">
+                    <div className="panel-header">
+                      <span>Notifications</span>
+                      <div className="panel-actions">
+                        {unreadCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={markAllRead}
+                            title="Mark all read"
                           >
-                            {n.text}
-                          </div>
-                          {n.time && (
-                            <div
-                              style={{
-                                fontSize: "0.7rem",
-                                color: "var(--muted)",
-                                marginTop: 2,
-                              }}
-                            >
-                              {fmtTime(n.time)}
-                            </div>
-                          )}
-                        </div>
-                        {n.unread && (
-                          <FontAwesomeIcon
-                            icon={faCircle}
-                            style={{
-                              fontSize: "0.4rem",
-                              color: "var(--accent)",
-                              marginLeft: 6,
-                            }}
-                          />
+                            <FontAwesomeIcon icon={faCheck} />
+                          </button>
+                        )}
+                        {notifications.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={clearAll}
+                            className="danger-icon"
+                            title="Clear all"
+                          >
+                            ✕
+                          </button>
                         )}
                       </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* PROFILE */}
-          <div className="dropdown-wrapper" ref={profile.ref}>
-            <div
-              className="avatar"
-              onClick={() => {
-                closeAll();
-                profile.setOpen(!profile.open);
-              }}
-            >
-              {initials}
-            </div>
-
-            {profile.open && (
-              <div className="profile-dropdown">
-                {user && (
-                  <div
-                    style={{
-                      padding: "10px 16px 8px",
-                      borderBottom: "1px solid var(--card-border)",
-                    }}
-                  >
-                    <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>
-                      {user.name}
                     </div>
-                    <div style={{ fontSize: "0.78rem", color: "var(--muted)" }}>
-                      {user.email}
+                    <div className="panel-list">
+                      {notifications.length === 0 ? (
+                        <div className="panel-empty">No notifications yet</div>
+                      ) : (
+                        notifications.map((notification) => (
+                          <button
+                            type="button"
+                            key={notification.id}
+                            className={`panel-item panel-button ${notification.unread ? "unread" : ""}`}
+                            onClick={() => {
+                              markRead(notification.id);
+                              if (notification.meta?.ticketId) {
+                                openChat({
+                                  id: notification.meta.ticketId,
+                                  title: notification.meta.ticketTitle,
+                                });
+                              }
+                            }}
+                          >
+                            <span className="panel-item-icon">
+                              {NOTIFICATION_ICONS[notification.type] || "🔔"}
+                            </span>
+                            <div className="panel-item-main">
+                              <div className="panel-item-text">
+                                {notification.text}
+                              </div>
+                              {notification.time && (
+                                <div className="panel-item-subtitle">
+                                  {formatTime(notification.time)}
+                                </div>
+                              )}
+                            </div>
+                            {notification.unread && (
+                              <FontAwesomeIcon
+                                icon={faCircle}
+                                className="unread-dot"
+                              />
+                            )}
+                          </button>
+                        ))
+                      )}
                     </div>
-                    {user.roles?.[0] && (
-                      <div
-                        style={{
-                          fontSize: "0.72rem",
-                          marginTop: 3,
-                          color: "var(--accent)",
-                          fontWeight: 600,
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        {user.roles[0]}
-                      </div>
-                    )}
                   </div>
                 )}
-
-                {isAdmin && (
-                  <Link
-                    to="/admin/users"
-                    className="dropdown-item"
-                    onClick={() => profile.setOpen(false)}
-                  >
-                    <FontAwesomeIcon icon={faUsersGear} /> User Management
-                  </Link>
-                )}
-
-                <div
-                  className="dropdown-item"
-                  onClick={() => {
-                    toggleTheme();
-                    profile.setOpen(false);
-                  }}
-                >
-                  <FontAwesomeIcon icon={isDark ? faMoon : faSun} />
-                  {isDark ? " Dark Mode" : " Light Mode"}
-                </div>
-
-                <div className="dropdown-divider" />
-
-                <button
-                  onClick={() => {
-                    logout();
-                    profile.setOpen(false);
-                  }}
-                  disabled={logoutLoading}
-                  className="dropdown-item danger"
-                  style={{
-                    width: "100%",
-                    background: "none",
-                    border: "none",
-                    textAlign: "left",
-                    cursor: "pointer",
-                    padding: "10px 16px",
-                    display: "flex",
-                    gap: 10,
-                    alignItems: "center",
-                    color: "var(--fg)",
-                  }}
-                >
-                  <FontAwesomeIcon icon={faRightFromBracket} />
-                  {logoutLoading ? "Logging out…" : "Logout"}
-                </button>
-              </div>
+              </>
             )}
-          </div>
+          </Dropdown>
 
-          {/* HAMBURGER */}
-          <div className="hamburger" onClick={() => setMobileOpen((o) => !o)}>
+          {/* PROFILE */}
+          <Dropdown>
+            {({ open, toggle, close }) => (
+              <>
+                <button
+                  type="button"
+                  className="avatar-trigger"
+                  onClick={toggle}
+                  aria-label="Open profile menu"
+                >
+                  <Avatar name={user?.name} />
+                </button>
+
+                {open && (
+                  <div className="profile-dropdown">
+                    {user && (
+                      <div className="profile-summary">
+                        <div className="profile-name">{user.name}</div>
+                        <div className="profile-email">{user.email}</div>
+                        {roleLabel && (
+                          <div className="profile-role">{roleLabel}</div>
+                        )}
+                      </div>
+                    )}
+
+                    {isAdmin && (
+                      <Link
+                        to="/admin/users"
+                        className="dropdown-item"
+                        onClick={close}
+                      >
+                        <FontAwesomeIcon icon={faUsersGear} /> User Management
+                      </Link>
+                    )}
+
+                    <button
+                      type="button"
+                      className="dropdown-item"
+                      onClick={() => {
+                        toggleTheme();
+                        close();
+                      }}
+                    >
+                      <FontAwesomeIcon icon={isDark ? faMoon : faSun} />
+                      {isDark ? " Dark Mode" : " Light Mode"}
+                    </button>
+
+                    <div className="dropdown-divider" />
+
+                    <button
+                      type="button"
+                      className="dropdown-item danger"
+                      onClick={() => {
+                        logout();
+                        close();
+                      }}
+                      disabled={logoutLoading}
+                    >
+                      <FontAwesomeIcon icon={faRightFromBracket} />
+                      {logoutLoading ? "Logging out…" : "Logout"}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </Dropdown>
+
+          <button
+            type="button"
+            className="hamburger"
+            onClick={() => setMobileOpen((current) => !current)}
+            aria-label="Toggle navigation"
+          >
             <FontAwesomeIcon icon={mobileOpen ? faTimes : faBars} />
-          </div>
+          </button>
         </div>
       </nav>
 
-      {/* MOBILE DRAWER */}
       {mobileOpen && (
         <div className="mobile-drawer" onClick={() => setMobileOpen(false)}>
           <div
             className="mobile-drawer-inner"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
           >
-            {navLinks.map((link) => {
-              if (!shouldShow(link)) return null;
-              return (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className={`mobile-nav-link ${isActive(link.to) ? "nav-icon-active" : ""}`}
-                  onClick={() => setMobileOpen(false)}
-                >
-                  <FontAwesomeIcon icon={link.icon} />
-                  <span>{link.label}</span>
-                </Link>
-              );
-            })}
-            <hr
-              style={{ borderColor: "var(--card-border)", margin: "12px 0" }}
-            />
+            {visibleLinks.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={`mobile-nav-link ${isActive(link.to) ? "nav-icon-active" : ""}`}
+                onClick={() => setMobileOpen(false)}
+              >
+                <FontAwesomeIcon icon={link.icon} />
+                <span>{link.label}</span>
+              </Link>
+            ))}
+            <hr />
             <button
+              type="button"
               className="mobile-nav-link danger"
               onClick={() => {
                 logout();
@@ -463,7 +390,6 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* CHAT */}
       {activeChat && (
         <ChatBox
           ticketId={activeChat.ticketId}

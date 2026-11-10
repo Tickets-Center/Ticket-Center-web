@@ -1,126 +1,136 @@
-@import "./root.css";
+/* Ticket table, filters and pagination */
 
-.grid table {
-  width: 100%;
-  border-collapse: collapse;
+.ticket-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-chip {
+  padding: 7px 15px;
+  border-radius: 20px;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--fg);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    color 0.2s;
+}
+
+.filter-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.filter-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.table-wrapper {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  overflow: hidden;
+  overflow-x: auto;
 }
 
-.grid th,
-.grid td {
+.table-wrapper table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-wrapper th,
+.table-wrapper td {
   padding: 12px 16px;
   text-align: left;
   color: var(--fg);
-  font-weight: 500;
   border-bottom: 1px solid var(--card-border);
+  vertical-align: middle;
 }
 
-.grid th {
+.table-wrapper th {
   background: var(--glass);
-  font-size: 1rem;
+  font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  color: var(--muted);
 }
 
-.grid tr:hover {
-  background: color-mix(in srgb, var(--accent) 10%, var(--card-bg) 90%);
-  cursor: pointer;
-  transition: background 0.2s;
+.table-wrapper tbody tr:last-child td {
+  border-bottom: none;
 }
 
-.grid td span {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: var(--radius);
-  font-weight: 600;
+.table-wrapper tbody tr:hover {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+.table-empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 26px 16px;
+}
+
+.table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pagination-btn {
+  min-width: 36px;
+  padding: 6px 11px;
+  border-radius: 8px;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--fg);
   font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    color 0.2s,
+    background 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.pagination-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
   color: #fff;
 }
 
-/* Status colors */
-.grid td span.status-Pending {
-  background: #ff7f11; /* light theme accent */
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.grid td span.status-In\ Progress {
-  background: #4e4feb; /* distinct blue for in progress */
+.pagination-total {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
-.grid td span.status-Completed {
-  background: #068fff; /* distinct blue for completed */
-}
-
-/* Responsive table */
 @media (max-width: 768px) {
-  .grid table,
-  .grid thead,
-  .grid tbody,
-  .grid th,
-  .grid td,
-  .grid tr {
-    display: block;
-  }
-
-  .grid thead tr {
-    display: none; /* hide table headers */
-  }
-
-  .grid tr {
-    margin-bottom: 16px;
-    background: var(--card-bg);
-    box-shadow: var(--shadow);
-    border-radius: var(--radius);
-    padding: 12px;
-  }
-
-  .grid td {
-    padding: 8px 12px;
-    border-bottom: none;
+  .pagination-total {
+    width: 100%;
+    margin-left: 0;
     text-align: right;
-    position: relative;
-  }
-
-  .grid td::before {
-    content: attr(data-label);
-    position: absolute;
-    left: 12px;
-    font-weight: 600;
-    color: var(--muted);
-    text-transform: uppercase;
-    font-size: 0.75rem;
-  }
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-}
-
-/* ---------- Responsive Adjustments ---------- */
-@media (max-width: 1024px) {
-  .route-container {
-    padding: 20px;
-    gap: 20px;
-  }
-}
-
-@media (max-width: 768px) {
-  .route-container {
-    padding: 16px;
-    gap: 16px;
-  }
-}
-
-@media (max-width: 480px) {
-  .route-container {
-    padding: 12px;
-    gap: 12px;
   }
 }

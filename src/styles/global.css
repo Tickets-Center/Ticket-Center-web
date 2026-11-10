@@ -1,5 +1,7 @@
-/* src/styles/global.css  (UPDATED) */
+/* Global entry point. Feature-specific styles are imported by their components. */
 @import "./root.css";
+@import "./forms.css";
+@import "./components.css";
 
 /* ── Reset ─────────────────────────────────────────────────── */
 *,
@@ -106,9 +108,23 @@ body {
   background: var(--success);
   color: #1a2600;
 }
+.btn-secondary {
+  background: var(--glass);
+  border: 1px solid var(--card-border);
+  color: var(--fg);
+}
+.btn-secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 .btn-danger {
   background: var(--danger);
   color: #fff;
+}
+.btn-small {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  border-radius: 8px;
 }
 
 /* ── Responsive ─────────────────────────────────────────────── */
@@ -133,44 +149,6 @@ body {
     margin: 4px;
     padding: 12px;
     border-radius: 10px;
-  }
-}
-
-/* ── Login form extras ──────────────────────────────────────── */
-.login-box input {
-  width: 100%;
-  background: var(--bg);
-  color: var(--fg);
-  box-sizing: border-box;
-}
-.login-box input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
-}
-
-/* ── Responsive login page ──────────────────────────────────── */
-@media (max-width: 768px) {
-  .fb-container {
-    flex-direction: column;
-    gap: 24px;
-    padding: 20px 16px;
-    align-items: center;
-    justify-content: flex-start;
-    padding-top: 40px;
-  }
-  .fb-left {
-    text-align: center;
-    max-width: 100%;
-  }
-  .fb-left h1 {
-    font-size: 2.2rem;
-  }
-  .fb-left p {
-    font-size: 1.1rem;
-  }
-  .login-box {
-    width: min(380px, 100%);
   }
 }
 

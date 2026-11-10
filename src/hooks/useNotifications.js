@@ -1,110 +1,124 @@
-// src/hooks/useNotifications.js
-import { useState, useEffect, useCallback, useRef } from "react";
-import { http } from "../services/api/http";
-import { useAuthContext } from "../features/auth/context/AuthContext";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { notificationsApi } from "../services/api/notifications";
+import { useAuth } from "../features/auth/useAuth";
 import echo from "../services/socket/echo";
 
-const normalize = (n) => ({
-  id: n.id,
-  text: n.message,
-  type: n.type,
-  unread: !n.is_read,
-  time: n.created_at,
+const normalize = (notification) => ({
+  id: notification.id,
+  text: notification.message,
+  type: notification.type,
+  unread: !notification.is_read,
+  time: notification.created_at,
   meta: {
-    ticketId: n.related_type?.includes("Ticket") ? n.related_id : null,
-    ticketTitle: n.title,
+    ticketId: notification.related_type?.includes("Ticket")
+      ? notification.related_id
+      : null,
+    ticketTitle: notification.title,
   },
 });
 
+function readStored(userId) {
+  try {
+    const saved = localStorage.getItem(`notifs_${userId}`);
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+}
+
 export function useNotifications() {
-  const { user } = useAuthContext();
+  const { user } = useAuth();
+  const userId = user?.id;
 
-  const [notifications, setNotifications] = useState(() => {
-    try {
-      const saved = localStorage.getItem(`notifs_${user?.id}`);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
+  const [notifications, setNotifications] = useState([]);
   const fetchedIds = useRef(new Set());
 
-  // ── persist ──
+  // Persist per user.
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
     try {
-      localStorage.setItem(`notifs_${user.id}`, JSON.stringify(notifications));
-    } catch {}
-  }, [notifications, user]);
-
-  // ── fetch + reset when user changes ──
-  useEffect(() => {
-    if (!user) {
-      setNotifications([]); // ← clear when logged out
-      fetchedIds.current = new Set();
-      return;
+      localStorage.setItem(`notifs_${userId}`, JSON.stringify(notifications));
+    } catch {
+      // Storage can be full or disabled; notifications still work in memory.
     }
+  }, [notifications, userId]);
 
-    // Reset before loading the new user's notifications
-    setNotifications([]);
+  // Load from storage for an instant paint, then refresh from the API.
+  useEffect(() => {
     fetchedIds.current = new Set();
 
-    // Load from localStorage for THIS user first (instant paint)
-    try {
-      const saved = localStorage.getItem(`notifs_${user.id}`);
-      if (saved) setNotifications(JSON.parse(saved));
-    } catch {}
+    if (!userId) {
+      Promise.resolve().then(() => setNotifications([]));
+      return undefined;
+    }
 
-    // Then fetch fresh from server
-    http.get("notifications").then((r) => {
-      const items = (r.data?.data ?? r.data ?? []).map(normalize);
-      items.forEach((n) => fetchedIds.current.add(n.id));
-      setNotifications(items);
+    let cancelled = false;
+
+    Promise.resolve().then(() => {
+      if (!cancelled) setNotifications(readStored(userId));
     });
-  }, [user?.id]); // ← key on user.id, not the whole user object
 
-  // ── WebSocket — re-subscribe when user.id changes ──
+    notificationsApi
+      .getAll()
+      .then((data) => {
+        if (cancelled) return;
+        const items = (data?.data ?? data ?? []).map(normalize);
+        items.forEach((item) => fetchedIds.current.add(item.id));
+        setNotifications(items);
+      })
+      .catch(() => {
+        // Keep the cached notifications when the network is unavailable.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  // Realtime notifications for the current user.
   useEffect(() => {
-    if (!user?.id) return;
+    if (!userId) return undefined;
 
-    const channelName = `users.${user.id}`;
-
-    echo.private(channelName).listen(".notification.sent", (e) => {
-      const incoming = normalize(e);
+    const channelName = `users.${userId}`;
+    echo.private(channelName).listen(".notification.sent", (event) => {
+      const incoming = normalize(event);
       if (fetchedIds.current.has(incoming.id)) return;
       fetchedIds.current.add(incoming.id);
       setNotifications((prev) => [incoming, ...prev]);
     });
 
     return () => {
-      echo.leave(channelName); // ← always leave the OLD user's channel on cleanup
+      echo.leave(channelName);
     };
-  }, [user?.id]); // ← key on user.id so it resubscribes on user switch
+  }, [userId]);
 
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  const unreadCount = notifications.filter((item) => item.unread).length;
   const unreadMessages = notifications.filter(
-    (n) => n.unread && n.type === "message",
+    (item) => item.unread && item.type === "message",
   );
 
   const markRead = useCallback(async (id) => {
-    await http.patch(`notifications/${id}/read`);
+    await notificationsApi.markRead(id);
     setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, unread: false } : n)),
+      prev.map((item) =>
+        item.id === id ? { ...item, unread: false } : item,
+      ),
     );
   }, []);
 
   const markAllRead = useCallback(async () => {
-    await http.patch("notifications/read-all");
-    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+    await notificationsApi.markAllRead();
+    setNotifications((prev) =>
+      prev.map((item) => ({ ...item, unread: false })),
+    );
   }, []);
 
   const clearAll = useCallback(async () => {
-    await http.delete("notifications");
-    localStorage.removeItem(`notifs_${user?.id}`);
+    await notificationsApi.clearAll();
+    localStorage.removeItem(`notifs_${userId}`);
     setNotifications([]);
     fetchedIds.current = new Set();
-  }, [user?.id]);
+  }, [userId]);
 
   return {
     notifications,

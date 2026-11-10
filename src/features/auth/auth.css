@@ -1,0 +1,230 @@
+/* Authentication screens */
+
+.fb-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  gap: 120px;
+  padding: 20px;
+}
+
+.fb-left {
+  max-width: 450px;
+}
+
+.fb-left h1 {
+  font-size: 60px;
+  line-height: 1.05;
+  color: var(--accent);
+  margin-bottom: 20px;
+}
+
+.fb-left p {
+  font-size: 26px;
+  line-height: 32px;
+  color: var(--fg);
+}
+
+.fb-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.login-box {
+  background: var(--card-bg);
+  padding: 24px;
+  width: 380px;
+  border-radius: var(--radius);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.login-box input:not(.otp-digit) {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.login-box input:not(.otp-digit):focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.login-btn {
+  background: var(--accent);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  border: none;
+  padding: 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.login-btn:hover {
+  opacity: 0.9;
+}
+
+.login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.signup-btn {
+  display: block;
+  background: var(--success);
+  color: #000;
+  font-size: 16px;
+  border: none;
+  padding: 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+
+.forgot {
+  text-align: center;
+  color: var(--accent);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.auth-title {
+  color: var(--accent);
+  margin: 0 0 6px;
+  text-align: center;
+  font-size: 1.5rem;
+}
+
+.auth-subtitle {
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+  margin: 0 0 16px;
+}
+
+.auth-footer {
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.auth-link {
+  color: var(--accent);
+  font-size: 14px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.auth-success {
+  text-align: center;
+}
+
+.auth-success p {
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.auth-success-text {
+  color: var(--accent);
+  text-align: center;
+  font-size: 14px;
+  margin: 0 0 8px;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.link-button:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.link-button.muted {
+  color: var(--muted);
+  text-decoration: underline;
+  align-self: center;
+}
+
+/* OTP */
+
+.otp-input {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.otp-digit {
+  width: 44px;
+  height: 52px;
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  border-radius: 10px;
+  border: 1.5px solid var(--card-border);
+  background: var(--bg);
+  color: var(--fg);
+  outline: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.otp-digit:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+@media (max-width: 768px) {
+  .fb-container {
+    flex-direction: column;
+    gap: 24px;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 40px 16px 20px;
+  }
+
+  .fb-left {
+    text-align: center;
+    max-width: 100%;
+  }
+
+  .fb-left h1 {
+    font-size: 2.2rem;
+  }
+
+  .fb-left p {
+    font-size: 1.1rem;
+  }
+
+  .login-box {
+    width: min(380px, 100%);
+  }
+}

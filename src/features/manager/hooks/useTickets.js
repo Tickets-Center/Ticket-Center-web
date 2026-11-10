@@ -1,41 +1,45 @@
-import { useEffect, useState, useMemo } from "react";
-import { getTickets } from "../api";
+import { useCallback, useMemo, useState } from "react";
+import { useAsyncData } from "../../../hooks/useAsyncData";
+import { managerApi } from "../../../services/api/manager";
 
 const PAGE_SIZE = 10;
 
 export function useTickets() {
-  const [tickets, setTickets] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
 
-  useEffect(() => {
-    getTickets()
-      .then((data) => setTickets(data))
-      .catch((err) => setError(err.message || "Failed to load tickets."))
-      .finally(() => setLoading(false));
-  }, []);
-
-  // Reset to page 1 when filter changes
-  useEffect(() => {
-    setPage(1);
-  }, [status]);
+  const loader = useCallback(() => managerApi.getTickets(), []);
+  const { data, loading, error } = useAsyncData(
+    loader,
+    [],
+    "Failed to load tickets.",
+  );
 
   const filtered = useMemo(() => {
-    if (status === "all") return tickets;
-    return tickets.filter((t) => t.status === status);
-  }, [tickets, status]);
+    const tickets = Array.isArray(data) ? data : [];
+    return status === "all"
+      ? tickets
+      : tickets.filter((ticket) => ticket.status === status);
+  }, [data, status]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const currentPage = totalPages === 0 ? 1 : Math.min(page, totalPages);
+  const paginated = filtered.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
+
+  const changeStatus = (nextStatus) => {
+    setStatus(nextStatus);
+    setPage(1);
+  };
 
   return {
     loading,
     error,
     status,
-    setStatus,
-    page,
+    setStatus: changeStatus,
+    page: currentPage,
     setPage,
     paginated,
     totalPages,

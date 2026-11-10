@@ -1,24 +1,17 @@
-// src/features/auth/ProtectedRoute.jsx
-
 import { Navigate, Outlet } from "react-router-dom";
-import { useAuthContext } from "./context/AuthContext";
+import PageLoader from "../../components/ui/PageLoader";
+import { useAuth } from "./useAuth";
+import { getUserRoles } from "./useHasRole";
 
 export default function ProtectedRoute({ roles = [] }) {
-  const { user, loading } = useAuthContext();
+  const { user, loading } = useAuth();
 
-  if (loading) return <p>Loading...</p>;
-
+  if (loading) return <PageLoader label="Restoring your session…" />;
   if (!user) return <Navigate to="/login" replace />;
-
-  // Normalise: roles may be an array of strings or Role objects
-  const userRoles = (Array.isArray(user.roles) ? user.roles : [])
-    .map((r) => (typeof r === "string" ? r : (r?.name ?? "")))
-    .filter(Boolean);
-
-  // No role restriction on this route — allow any authenticated user
   if (roles.length === 0) return <Outlet />;
 
-  if (!roles.some((r) => userRoles.includes(r))) {
+  const userRoles = getUserRoles(user);
+  if (!roles.some((role) => userRoles.includes(role))) {
     return <Navigate to="/unauthorized" replace />;
   }
 
