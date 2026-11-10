@@ -13,7 +13,7 @@ RUN npm ci --prefer-offline
 
 # Build-time env vars (VITE_ prefix makes them public)
 # Pass these with: docker build --build-arg VITE_API_BASE_URL=https://api.example.com ...
-ARG VITE_API_BASE_URL=http://api:8000/api
+ARG VITE_API_BASE_URL=http://localhost:8000/api
 ARG VITE_REVERB_APP_KEY=ticketcenter-key
 ARG VITE_REVERB_HOST=localhost
 ARG VITE_REVERB_PORT=8080

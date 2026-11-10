@@ -1,6 +1,17 @@
 import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
+import { 
+  faSun,
+  faMoon,
+  faHouse,
+  faUserGear,
+  faClipboardList,
+  faChartLine,
+  faBell,
+  faEnvelope,
+  faRightFromBracket,
+  faGear,
+  faCheck,
   faBars,
   faBell,
   faCheck,
